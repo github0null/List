@@ -2,9 +2,23 @@
 #define _H_C_List
 
 #include <stdint.h>
-#include "Mem.h"
+#include <list_conf.h>
 
+#ifndef INVALID_PTR
 #define INVALID_PTR ((void *)0xFFFFFFFFU)
+#endif // !INVALID_PTR
+
+#ifndef List_Lock
+#define List_Lock()
+#endif
+
+#ifndef List_UnLock
+#define List_UnLock()
+#endif
+
+#ifndef List_Inline_Func
+#define List_Inline_Func inline
+#endif
 
 typedef struct _ListNode {
 	void *data;
@@ -39,6 +53,7 @@ ListNode *List_FindNext(ListNode *node, NodeMatcher matcher);
 
 ListNode *List_First(List *list);
 ListNode *List_Last(List *list);
+uint32_t List_Length(List *list);
 
 ListNode *List_InsertNode(List *list, ListNode *node, void *data);
 ListNode *List_RemoveNode(List *list, ListNode *node);
