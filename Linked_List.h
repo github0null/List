@@ -20,6 +20,14 @@
 #define List_Inline_Func inline
 #endif
 
+#ifndef List_malloc
+#define List_malloc malloc
+#endif
+
+#ifndef List_free
+#define List_free free
+#endif
+
 typedef struct _ListNode {
 	void *data;
 	struct _ListNode *next;

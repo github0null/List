@@ -95,7 +95,7 @@ List *List_CreateList()
 {
     List_Lock();
 
-    List *list = (List *)malloc(sizeof(List));
+    List *list = (List *)List_malloc(sizeof(List));
     list->length = 0;
     list->head = INVALID_PTR;
     list->tail = INVALID_PTR;
@@ -113,10 +113,10 @@ void List_DestroyList(List *list, DataDestructor destructor)
     while (node != INVALID_PTR)
     {
         destructor(node->data);
-        free(node);
+        List_free(node);
         node = List_Pop(list);
     }
-    free(list);
+    List_free(list);
 
     List_UnLock();
 }
@@ -156,7 +156,7 @@ ListNode *List_Push(List *list, void *data)
 {
     List_Lock();
 
-    ListNode *node = (ListNode *)malloc(sizeof(ListNode));
+    ListNode *node = (ListNode *)List_malloc(sizeof(ListNode));
 
     node->data = data;
     node->next = INVALID_PTR;
@@ -184,7 +184,7 @@ ListNode *List_Prepend(List *list, void *data)
 {
     List_Lock();
 
-    ListNode *node = (ListNode *)malloc(sizeof(ListNode));
+    ListNode *node = (ListNode *)List_malloc(sizeof(ListNode));
 
     node->data = data;
     node->next = INVALID_PTR;
@@ -299,7 +299,7 @@ ListNode *List_InsertNode(List *list, ListNode *node, void *data)
 {
     List_Lock();
 
-    ListNode *nNode = (ListNode *)malloc(sizeof(ListNode));
+    ListNode *nNode = (ListNode *)List_malloc(sizeof(ListNode));
     nNode->data = data;
     _link_next(node, nNode);
     if (node == list->tail)
@@ -379,7 +379,7 @@ void List_DeleteMatched(List *list, NodeMatcher matcher, DataDestructor destruct
             n = current->next;
             current = List_RemoveNode(list, current);
             destructor(current->data);
-            free(current);
+            List_free(current);
             current = n;
         }
         else
@@ -434,7 +434,7 @@ void List_QuickSort(List *list, NodeComparer comparer)
     List_Lock();
 
     List *stack = List_CreateList();
-    _sort_data *nsData = (_sort_data *)malloc(sizeof(_sort_data)), *sData = INVALID_PTR;
+    _sort_data *nsData = (_sort_data *)List_malloc(sizeof(_sort_data)), *sData = INVALID_PTR;
     ListNode *node = INVALID_PTR, *middle = INVALID_PTR;
 
     nsData->first = list->head;
@@ -461,7 +461,7 @@ void List_QuickSort(List *list, NodeComparer comparer)
             //right
             if (middle != sData->last)
             {
-                nsData = (_sort_data *)malloc(sizeof(_sort_data));
+                nsData = (_sort_data *)List_malloc(sizeof(_sort_data));
                 nsData->first = middle->next;
                 nsData->last = sData->last;
                 List_Push(stack, nsData);
@@ -470,7 +470,7 @@ void List_QuickSort(List *list, NodeComparer comparer)
             //left
             if (middle != sData->first)
             {
-                nsData = (_sort_data *)malloc(sizeof(_sort_data));
+                nsData = (_sort_data *)List_malloc(sizeof(_sort_data));
                 nsData->first = sData->first;
                 nsData->last = middle->prev;
                 List_Push(stack, nsData);
@@ -484,11 +484,11 @@ void List_QuickSort(List *list, NodeComparer comparer)
             }
         }
 
-        free(sData);
-        free(node);
+        List_free(sData);
+        List_free(node);
     }
 
-    free(stack);
+    List_free(stack);
 
     List_UnLock();
 
