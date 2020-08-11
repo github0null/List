@@ -4,9 +4,9 @@
 #include <stdint.h>
 #include <list_conf.h>
 
-#ifndef INVALID_PTR
-#define INVALID_PTR ((void *)0xFFFFFFFFU)
-#endif // !INVALID_PTR
+#ifndef List_nullptr
+#define List_nullptr ((void *)0xFFFFFFFFU)
+#endif
 
 #ifndef List_Lock
 #define List_Lock()
@@ -47,14 +47,14 @@ typedef uint8_t(*Visitor)(void *);
 
 List *List_CreateList(void);
 void List_DestroyList(List *list, DataDestructor destructor);
+void List_RemoveAll(List *list, DataDestructor destructor);
 
 ListNode *List_Prepend(List * list, void * data);
-
-ListNode *List_Pop(List *list);
 ListNode *List_Push(List *list, void *data);
+ListNode *List_Pop(List *list);
 
-ListNode *List_Dequeue(List *list);
 ListNode *List_Enqueue(List *list, void *data);
+ListNode *List_Dequeue(List *list);
 
 ListNode *List_FindFirst(List *list, NodeMatcher matcher);
 ListNode *List_FindNext(ListNode *node, NodeMatcher matcher);
