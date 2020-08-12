@@ -94,33 +94,34 @@ ListNode *_sort_part(ListNode *_first, ListNode *_last, NodeComparer comparer)
     return first;
 }
 
-List *List_CreateList()
+List *List_CreateList(DataDestructor destructor)
 {
     List_Lock();
     List *list = (List *)List_malloc(sizeof(List));
     list->length = 0;
     list->head = NULL;
     list->tail = NULL;
+    list->destructor = destructor;
     List_UnLock();
     return list;
 }
 
-void List_DestroyList(List *list, DataDestructor destructor)
+void List_DestroyList(List *list)
 {
     List_Lock();
-    List_RemoveAll(list, destructor);
+    List_DeleteAll(list);
     List_free(list);
     List_UnLock();
 }
 
-void List_RemoveAll(List *list, DataDestructor destructor)
+void List_DeleteAll(List *list)
 {
     List_Lock();
 
     ListNode *node = List_Pop(list);
     while (node != NULL)
     {
-        destructor(node->data);
+        list->destructor(node->data);
         List_free(node);
         node = List_Pop(list);
     }
@@ -251,7 +252,7 @@ ListNode *List_Enqueue(List *list, void *data)
     return List_Push(list, data);
 }
 
-ListNode *List_FindFirst(List *list, NodeMatcher matcher)
+ListNode *List_FindFirst(List *list, NodeMatcher matcher, void *params)
 {
     List_Lock();
 
@@ -259,7 +260,7 @@ ListNode *List_FindFirst(List *list, NodeMatcher matcher)
 
     while (node != NULL)
     {
-        if (matcher(node->data))
+        if (matcher(node->data, params))
             break;
         node = node->next;
     }
@@ -269,7 +270,7 @@ ListNode *List_FindFirst(List *list, NodeMatcher matcher)
     return node;
 }
 
-ListNode *List_FindNext(ListNode *node, NodeMatcher matcher)
+ListNode *List_FindNext(ListNode *node, NodeMatcher matcher, void *params)
 {
     List_Lock();
 
@@ -277,7 +278,7 @@ ListNode *List_FindNext(ListNode *node, NodeMatcher matcher)
 
     while (cNode != NULL)
     {
-        if (matcher(cNode->data))
+        if (matcher(cNode->data, params))
             break;
         cNode = cNode->next;
     }
@@ -356,6 +357,11 @@ ListNode *List_RemoveNode(List *list, ListNode *node)
             list->head = list->tail = NULL;
         }
     }
+    else if (node->prev == NULL || node->next == NULL)
+    {
+        List_UnLock();
+        return NULL;
+    }
     else
     {
         prev = node->prev;
@@ -373,7 +379,15 @@ ListNode *List_RemoveNode(List *list, ListNode *node)
     return node;
 }
 
-void List_DeleteMatched(List *list, NodeMatcher matcher, DataDestructor destructor)
+void List_DeleteNode(List *list, ListNode *node)
+{
+    List_Lock();
+    list->destructor(node->data);
+    List_free(node);
+    List_UnLock();
+}
+
+void List_DeleteMatched(List *list, NodeMatcher matcher, void *params)
 {
     List_Lock();
 
@@ -381,11 +395,11 @@ void List_DeleteMatched(List *list, NodeMatcher matcher, DataDestructor destruct
 
     while (current != NULL)
     {
-        if (matcher(current->data))
+        if (matcher(current->data, params))
         {
             n = current->next;
             current = List_RemoveNode(list, current);
-            destructor(current->data);
+            list->destructor(current->data);
             List_free(current);
             current = n;
         }
@@ -398,12 +412,12 @@ void List_DeleteMatched(List *list, NodeMatcher matcher, DataDestructor destruct
     List_UnLock();
 }
 
-uint32_t List_Count(List *list, NodeMatcher matcher)
+uint32_t List_Count(List *list, NodeMatcher matcher, void *params)
 {
     List_Lock();
 
     uint32_t count = 0;
-    ListNode *node = List_FindFirst(list, matcher);
+    ListNode *node = List_FindFirst(list, matcher, params);
 
     if (node == NULL)
     {
@@ -415,7 +429,7 @@ uint32_t List_Count(List *list, NodeMatcher matcher)
 
     do
     {
-        if (matcher(node->data))
+        if (matcher(node->data, params))
             count++;
         node = node->next;
     } while (node != NULL);
@@ -440,15 +454,17 @@ void List_QuickSort(List *list, NodeComparer comparer)
 {
     List_Lock();
 
-    List *stack = List_CreateList();
-    _sort_data *nsData = (_sort_data *)List_malloc(sizeof(_sort_data)), *sData = NULL;
+    List *stack = List_CreateList(NULL);
+    _sort_data *nsData = NULL, *sData = NULL;
     ListNode *node = NULL, *middle = NULL;
 
+    nsData = (_sort_data *)List_malloc(sizeof(_sort_data));
     nsData->first = list->head;
     nsData->last = list->tail;
 
     if (nsData->first == nsData->last)
     {
+        List_free(nsData);
         List_UnLock();
         return;
     }
