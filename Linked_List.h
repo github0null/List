@@ -39,13 +39,7 @@ typedef struct _ListNode {
 	struct _ListNode *prev;
 } ListNode;
 
-typedef struct
-{
-    ListNode *head;
-    ListNode *tail;
-    uint32_t length;
-    DataDestructor destructor;
-} List;
+typedef struct List List;
 
 List *List_CreateList(DataDestructor destructor);
 void List_DestroyList(List *list);

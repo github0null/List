@@ -6,6 +6,14 @@
 #undef NULL
 #define NULL List_nullptr
 
+struct List
+{
+    ListNode *head;
+    ListNode *tail;
+    uint32_t length;
+    DataDestructor destructor;
+};
+
 inline void _cut_prev(ListNode *node)
 {
     node->prev->next = NULL;
