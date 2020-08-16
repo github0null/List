@@ -14,19 +14,19 @@ struct List
     DataDestructor destructor;
 };
 
-inline void _cut_prev(ListNode *node)
+List_Inline void _cut_prev(ListNode *node)
 {
     node->prev->next = NULL;
     node->prev = NULL;
 }
 
-inline void _cut_next(ListNode *node)
+List_Inline void _cut_next(ListNode *node)
 {
     node->next->prev = NULL;
     node->next = NULL;
 }
 
-inline void _link_next(ListNode *node, ListNode *nNode)
+List_Inline void _link_next(ListNode *node, ListNode *nNode)
 {
     ListNode *next;
     if (node->next == NULL)
@@ -45,14 +45,14 @@ inline void _link_next(ListNode *node, ListNode *nNode)
     }
 }
 
-inline void _swap_node(ListNode *n1, ListNode *n2)
+List_Inline void _swap_node(ListNode *n1, ListNode *n2)
 {
     void *data1 = n1->data;
     n1->data = n2->data;
     n2->data = data1;
 }
 
-inline void _set_node(ListNode *node, void *data)
+List_Inline void _set_node(ListNode *node, void *data)
 {
     node->data = data;
 }

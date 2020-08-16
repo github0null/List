@@ -16,8 +16,8 @@
 #define List_UnLock()
 #endif
 
-#ifndef List_Inline_Func
-#define List_Inline_Func inline
+#ifndef List_Inline
+#define List_Inline
 #endif
 
 #ifndef List_malloc
@@ -28,15 +28,16 @@
 #define List_free free
 #endif
 
-typedef int(*NodeComparer)(void *, void *);
-typedef uint8_t(*NodeMatcher)(void *node, void *params);
-typedef void(*DataDestructor)(void *);
-typedef uint8_t(*Visitor)(void *);
+typedef int (*NodeComparer)(void *, void *);
+typedef uint8_t (*NodeMatcher)(void *node, void *params);
+typedef void (*DataDestructor)(void *);
+typedef uint8_t (*Visitor)(void *);
 
-typedef struct _ListNode {
-	void *data;
-	struct _ListNode *next;
-	struct _ListNode *prev;
+typedef struct _ListNode
+{
+    void *data;
+    struct _ListNode *next;
+    struct _ListNode *prev;
 } ListNode;
 
 typedef struct List List;
@@ -44,7 +45,7 @@ typedef struct List List;
 List *List_CreateList(DataDestructor destructor);
 void List_DestroyList(List *list);
 
-ListNode *List_Prepend(List * list, void * data);
+ListNode *List_Prepend(List *list, void *data);
 ListNode *List_Push(List *list, void *data);
 ListNode *List_Pop(List *list);
 
@@ -67,11 +68,10 @@ void List_DeleteMatched(List *list, NodeMatcher matcher, void *params);
 
 void List_Traverse(List *list, uint8_t isReverse, Visitor visitor);
 
-void List_QuickSort(List* list, NodeComparer comparer);
+void List_QuickSort(List *list, NodeComparer comparer);
 
 uint32_t List_Count(List *list, NodeMatcher matcher, void *params);
 
 uint8_t List_IsEmpty(List *list);
 
 #endif
-
