@@ -28,10 +28,10 @@
 #define List_free free
 #endif
 
-typedef int (*NodeComparer)(void *, void *);
-typedef uint8_t (*NodeMatcher)(void *node, void *params);
-typedef void (*DataDestructor)(void *);
-typedef uint8_t (*Visitor)(void *);
+typedef int (*NodeComparer)(void *dat1, void *dat2);
+typedef uint8_t (*NodeMatcher)(void *dat, void *params);
+typedef void (*DataDestructor)(void *dat);
+typedef uint8_t (*Visitor)(void *dat);
 
 typedef struct _ListNode
 {
