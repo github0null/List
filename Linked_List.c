@@ -57,6 +57,11 @@ List_Inline void _set_node(ListNode *node, void *data)
     node->data = data;
 }
 
+void _null_data_destructor(void *nul) 
+{
+    /* nothing todo */
+}
+
 //-------------------------------------------------------
 
 ListNode *_sort_part(ListNode *_first, ListNode *_last, NodeComparer comparer)
@@ -109,7 +114,10 @@ List *List_CreateList(DataDestructor destructor)
     list->length = 0;
     list->head = NULL;
     list->tail = NULL;
-    list->destructor = destructor;
+    if (destructor == List_nullptr)
+        list->destructor = _null_data_destructor;
+    else
+        list->destructor = destructor;
     List_UnLock();
     return list;
 }
