@@ -2,6 +2,7 @@
 #define _H_C_List
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <list_conf.h>
 
 #ifndef List_nullptr
@@ -29,9 +30,9 @@
 #endif
 
 typedef int (*NodeComparer)(void *dat1, void *dat2);
-typedef uint8_t (*NodeMatcher)(void *dat, void *params);
+typedef bool (*NodeMatcher)(void *dat, void *params);
 typedef void (*DataDestructor)(void *dat);
-typedef uint8_t (*Visitor)(void *dat);
+typedef bool (*Visitor)(void *dat);
 
 typedef struct _ListNode
 {
@@ -66,12 +67,14 @@ void List_DeleteAll(List *list);
 void List_DeleteNode(List *list, ListNode *node);
 void List_DeleteMatched(List *list, NodeMatcher matcher, void *params);
 
-void List_Traverse(List *list, uint8_t isReverse, Visitor visitor);
+void List_Traverse(List *list, bool isReverse, Visitor visitor);
 
 void List_QuickSort(List *list, NodeComparer comparer);
 
 uint32_t List_Count(List *list, NodeMatcher matcher, void *params);
 
-uint8_t List_IsEmpty(List *list);
+bool List_IsEmpty(List *list);
+
+bool List_DefNodeMatcher(void *dat, void *params);
 
 #endif

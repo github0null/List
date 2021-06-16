@@ -1,8 +1,5 @@
 #include <Linked_List.h>
 
-#define true 1
-#define false 0
-
 #undef NULL
 #define NULL List_nullptr
 
@@ -68,7 +65,7 @@ ListNode *_sort_part(ListNode *_first, ListNode *_last, NodeComparer comparer)
 {
     ListNode *pit = _first, *first = _first, *last = _last;
     void *base = _first->data;
-    uint8_t isRight = true;
+    bool isRight = true;
 
     while (first != last)
     {
@@ -455,7 +452,7 @@ uint32_t List_Count(List *list, NodeMatcher matcher, void *params)
     return count;
 }
 
-uint8_t List_IsEmpty(List *list)
+bool List_IsEmpty(List *list)
 {
     return list->length == 0;
 }
@@ -534,7 +531,7 @@ void List_QuickSort(List *list, NodeComparer comparer)
     return;
 }
 
-void List_Traverse(List *list, uint8_t isReverse, Visitor visitor)
+void List_Traverse(List *list, bool isReverse, Visitor visitor)
 {
     List_Lock();
 
@@ -548,4 +545,9 @@ void List_Traverse(List *list, uint8_t isReverse, Visitor visitor)
     }
 
     List_UnLock();
+}
+
+bool List_DefNodeMatcher(void *dat, void *params)
+{
+    return dat == params;
 }
