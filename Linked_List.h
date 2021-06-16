@@ -6,7 +6,7 @@
 #include <list_conf.h>
 
 #ifndef List_nullptr
-#define List_nullptr ((void *)0xFFFFFFFFU)
+#define List_nullptr ((void *)0)
 #endif
 
 #ifndef List_Lock

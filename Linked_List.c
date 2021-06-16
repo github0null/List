@@ -111,7 +111,7 @@ List *List_CreateList(DataDestructor destructor)
     list->length = 0;
     list->head = NULL;
     list->tail = NULL;
-    if (destructor == List_nullptr)
+    if (destructor == NULL)
         list->destructor = _null_data_destructor;
     else
         list->destructor = destructor;
