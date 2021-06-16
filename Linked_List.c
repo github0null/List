@@ -3,13 +3,26 @@
 #undef NULL
 #define NULL List_nullptr
 
+#ifdef LIST_OS_EN
+#define List_Lock(list) List_MutexAcquire(list->lock)
+#define List_UnLock(list) List_MutexRelease(list->lock)
+#else
+#define List_Lock(list)
+#define List_UnLock(list)
+#endif
+
 struct List
 {
     ListNode *head;
     ListNode *tail;
     uint32_t length;
     DataDestructor destructor;
+#ifdef LIST_OS_EN
+    void *lock;
+#endif
 };
+
+//----------------------------- internal func -----------------------------------
 
 List_Inline void _cut_prev(ListNode *node)
 {
@@ -59,7 +72,413 @@ void _null_data_destructor(void *nul)
     /* nothing todo */
 }
 
+ListNode *_list_pop(List *list)
+{
+    ListNode *node = NULL;
+    if (list->length == 0)
+    {
+        return node;
+    }
+
+    if (list->head == list->tail)
+    {
+        node = list->head;
+        list->head = NULL;
+        list->tail = NULL;
+        list->length = 0;
+    }
+    else
+    {
+        node = list->tail;
+        list->tail = node->prev;
+        _cut_prev(node);
+        list->length--;
+    }
+
+    return node;
+}
+
+ListNode *_list_remove_node(List *list, ListNode *node)
+{
+    ListNode *prev, *next;
+
+    if (list->length == 0)
+    {
+        return NULL;
+    }
+
+    if (node == list->head)
+    {
+        if (node->next != NULL)
+        {
+            list->head = node->next;
+            _cut_next(node);
+        }
+        else
+        {
+            list->head = list->tail = NULL;
+        }
+    }
+    else if (node == list->tail)
+    {
+        if (node->prev != NULL)
+        {
+            list->tail = node->prev;
+            _cut_prev(node);
+        }
+        else
+        {
+            list->head = list->tail = NULL;
+        }
+    }
+    else if (node->prev == NULL || node->next == NULL)
+    {
+        return NULL;
+    }
+    else
+    {
+        prev = node->prev;
+        next = node->next;
+        _cut_prev(node);
+        _cut_next(node);
+        prev->next = next;
+        next->prev = prev;
+    }
+
+    list->length--;
+
+    return node;
+}
+
+ListNode *_list_find_first(List *list, NodeMatcher matcher, void *params)
+{
+    ListNode *node = list->head;
+
+    while (node != NULL)
+    {
+        if (matcher(node->data, params))
+            break;
+        node = node->next;
+    }
+
+    return node;
+}
+
 //-------------------------------------------------------
+
+List *List_CreateList(DataDestructor destructor)
+{
+    List *list = (List *)List_malloc(sizeof(List));
+    list->length = 0;
+    list->head = NULL;
+    list->tail = NULL;
+    if (destructor == NULL)
+        list->destructor = _null_data_destructor;
+    else
+        list->destructor = destructor;
+#ifdef LIST_OS_EN
+    list->lock = List_MutexNew();
+#endif
+    return list;
+}
+
+void List_DestroyList(List *list)
+{
+    List_DeleteAll(list);
+#ifdef LIST_OS_EN
+    List_MutexFree(list->lock);
+#endif
+    List_free(list);
+}
+
+void List_DeleteAll(List *list)
+{
+    List_Lock(list);
+
+    ListNode *node = _list_pop(list);
+    while (node != NULL)
+    {
+        list->destructor(node->data);
+        List_free(node);
+        node = _list_pop(list);
+    }
+
+    List_UnLock(list);
+}
+
+ListNode *List_Pop(List *list) 
+{
+    List_Lock(list);
+    ListNode *node = _list_pop(list);
+    List_UnLock(list);
+    return node;
+}
+
+ListNode *List_Push(List *list, void *data)
+{
+    List_Lock(list);
+
+    ListNode *node = (ListNode *)List_malloc(sizeof(ListNode));
+
+    node->data = data;
+    node->next = NULL;
+    node->prev = NULL;
+
+    if (list->length == 0)
+    {
+        list->head = list->tail = node;
+    }
+    else
+    {
+        list->tail->next = node;
+        node->prev = list->tail;
+        list->tail = node;
+    }
+
+    list->length++;
+
+    List_UnLock(list);
+
+    return node;
+}
+
+ListNode *List_Prepend(List *list, void *data)
+{
+    List_Lock(list);
+
+    ListNode *node = (ListNode *)List_malloc(sizeof(ListNode));
+
+    node->data = data;
+    node->next = NULL;
+    node->prev = NULL;
+
+    if (list->length == 0)
+    {
+        list->head = list->tail = node;
+    }
+    else
+    {
+        node->next = list->head;
+        list->head->prev = node;
+        list->head = node;
+    }
+
+    list->length++;
+
+    List_UnLock(list);
+
+    return node;
+}
+
+ListNode *List_Dequeue(List *list)
+{
+    List_Lock(list);
+
+    ListNode *node = NULL;
+    if (list->length == 0)
+    {
+        List_UnLock(list);
+        return node;
+    }
+
+    if (list->head == list->tail)
+    {
+        node = list->head;
+        list->head = NULL;
+        list->tail = NULL;
+        list->length = 0;
+    }
+    else
+    {
+        node = list->head;
+        list->head = node->next;
+        _cut_next(node);
+        list->length--;
+    }
+
+    List_UnLock(list);
+
+    return node;
+}
+
+ListNode *List_Enqueue(List *list, void *data)
+{
+    return List_Push(list, data);
+}
+
+ListNode *List_FindFirst(List *list, NodeMatcher matcher, void *params)
+{
+    List_Lock(list);
+    ListNode *node = _list_find_first(list, matcher, params);
+    List_UnLock(list);
+    return node;
+}
+
+ListNode *List_FindNext(List *list, ListNode *node,
+                        NodeMatcher matcher, void *params)
+{
+    List_Lock(list);
+
+    ListNode *cNode = node->next;
+
+    while (cNode != NULL)
+    {
+        if (matcher(cNode->data, params))
+            break;
+        cNode = cNode->next;
+    }
+
+    List_UnLock(list);
+
+    return cNode;
+}
+
+ListNode *List_First(List *list)
+{
+    List_Lock(list);
+    ListNode *node = list->head;
+    List_UnLock(list);
+    return node;
+}
+
+ListNode *List_Last(List *list)
+{
+    List_Lock(list);
+    ListNode *node = list->tail;
+    List_UnLock(list);
+    return node;
+}
+
+uint32_t List_Length(List *list)
+{
+    List_Lock(list);
+    uint32_t len = list->length;
+    List_UnLock(list);
+    return len;
+}
+
+ListNode *List_InsertNode(List *list, ListNode *node, void *data)
+{
+    List_Lock(list);
+
+    ListNode *nNode = (ListNode *)List_malloc(sizeof(ListNode));
+    nNode->data = data;
+    _link_next(node, nNode);
+    if (node == list->tail)
+    {
+        list->tail = nNode;
+    }
+    list->length++;
+
+    List_UnLock(list);
+
+    return nNode;
+}
+
+ListNode *List_RemoveNode(List *list, ListNode *node)
+{
+    List_Lock(list);
+    ListNode *n = _list_remove_node(list, node);
+    List_UnLock(list);
+    return n;
+}
+
+void List_DeleteNode(List *list, ListNode *node)
+{
+    List_Lock(list);
+    list->destructor(node->data);
+    List_free(node);
+    List_UnLock(list);
+}
+
+void List_DeleteMatched(List *list, NodeMatcher matcher, void *params)
+{
+    List_Lock(list);
+
+    ListNode *current = list->head, *n;
+
+    while (current != NULL)
+    {
+        if (matcher(current->data, params))
+        {
+            n = current->next;
+            current = _list_remove_node(list, current);
+            list->destructor(current->data);
+            List_free(current);
+            current = n;
+        }
+        else
+        {
+            current = current->next;
+        }
+    }
+
+    List_UnLock(list);
+}
+
+uint32_t List_Count(List *list, NodeMatcher matcher, void *params)
+{
+    List_Lock(list);
+
+    uint32_t count = 0;
+    ListNode *node = _list_find_first(list, matcher, params);
+
+    if (node == NULL)
+    {
+        List_UnLock(list);
+        return count;
+    }
+
+    count++;
+
+    do
+    {
+        if (matcher(node->data, params))
+            count++;
+        node = node->next;
+    } while (node != NULL);
+
+    List_UnLock(list);
+
+    return count;
+}
+
+bool List_IsEmpty(List *list)
+{
+    List_Lock(list);
+    uint32_t len = list->length;
+    List_UnLock(list);
+    return len == 0;
+}
+
+void List_Traverse(List *list, bool isReverse, Visitor visitor, void *params)
+{
+    List_Lock(list);
+
+    ListNode *current = isReverse ? list->tail : list->head;
+
+    while (current != NULL)
+    {
+        if (visitor(current->data, params))
+            break;
+        current = isReverse ? current->prev : current->next;
+    }
+
+    List_UnLock(list);
+}
+
+bool List_DefEqualMatcher(void *dat, void *params)
+{
+    return dat == params;
+}
+
+//----------------------- quick sort ---------------------------
+
+typedef struct
+{
+    ListNode *first;
+    ListNode *last;
+} _sort_data;
 
 ListNode *_sort_part(ListNode *_first, ListNode *_last, NodeComparer comparer)
 {
@@ -104,368 +523,9 @@ ListNode *_sort_part(ListNode *_first, ListNode *_last, NodeComparer comparer)
     return first;
 }
 
-List *List_CreateList(DataDestructor destructor)
-{
-    List_Lock();
-    List *list = (List *)List_malloc(sizeof(List));
-    list->length = 0;
-    list->head = NULL;
-    list->tail = NULL;
-    if (destructor == NULL)
-        list->destructor = _null_data_destructor;
-    else
-        list->destructor = destructor;
-    List_UnLock();
-    return list;
-}
-
-void List_DestroyList(List *list)
-{
-    List_Lock();
-    List_DeleteAll(list);
-    List_free(list);
-    List_UnLock();
-}
-
-void List_DeleteAll(List *list)
-{
-    List_Lock();
-
-    ListNode *node = List_Pop(list);
-    while (node != NULL)
-    {
-        list->destructor(node->data);
-        List_free(node);
-        node = List_Pop(list);
-    }
-
-    List_UnLock();
-}
-
-ListNode *List_Pop(List *list)
-{
-    List_Lock();
-
-    ListNode *node = NULL;
-    if (list->length == 0)
-    {
-        List_UnLock();
-        return node;
-    }
-
-    if (list->head == list->tail)
-    {
-        node = list->head;
-        list->head = NULL;
-        list->tail = NULL;
-        list->length = 0;
-    }
-    else
-    {
-        node = list->tail;
-        list->tail = node->prev;
-        _cut_prev(node);
-        list->length--;
-    }
-
-    List_UnLock();
-
-    return node;
-}
-
-ListNode *List_Push(List *list, void *data)
-{
-    List_Lock();
-
-    ListNode *node = (ListNode *)List_malloc(sizeof(ListNode));
-
-    node->data = data;
-    node->next = NULL;
-    node->prev = NULL;
-
-    if (list->length == 0)
-    {
-        list->head = list->tail = node;
-    }
-    else
-    {
-        list->tail->next = node;
-        node->prev = list->tail;
-        list->tail = node;
-    }
-
-    list->length++;
-
-    List_UnLock();
-
-    return node;
-}
-
-ListNode *List_Prepend(List *list, void *data)
-{
-    List_Lock();
-
-    ListNode *node = (ListNode *)List_malloc(sizeof(ListNode));
-
-    node->data = data;
-    node->next = NULL;
-    node->prev = NULL;
-
-    if (list->length == 0)
-    {
-        list->head = list->tail = node;
-    }
-    else
-    {
-        node->next = list->head;
-        list->head->prev = node;
-        list->head = node;
-    }
-
-    list->length++;
-
-    List_UnLock();
-
-    return node;
-}
-
-ListNode *List_Dequeue(List *list)
-{
-    List_Lock();
-
-    ListNode *node = NULL;
-    if (list->length == 0)
-    {
-        List_UnLock();
-        return node;
-    }
-
-    if (list->head == list->tail)
-    {
-        node = list->head;
-        list->head = NULL;
-        list->tail = NULL;
-        list->length = 0;
-    }
-    else
-    {
-        node = list->head;
-        list->head = node->next;
-        _cut_next(node);
-        list->length--;
-    }
-
-    List_UnLock();
-
-    return node;
-}
-
-ListNode *List_Enqueue(List *list, void *data)
-{
-    return List_Push(list, data);
-}
-
-ListNode *List_FindFirst(List *list, NodeMatcher matcher, void *params)
-{
-    List_Lock();
-
-    ListNode *node = list->head;
-
-    while (node != NULL)
-    {
-        if (matcher(node->data, params))
-            break;
-        node = node->next;
-    }
-
-    List_UnLock();
-
-    return node;
-}
-
-ListNode *List_FindNext(ListNode *node, NodeMatcher matcher, void *params)
-{
-    List_Lock();
-
-    ListNode *cNode = node->next;
-
-    while (cNode != NULL)
-    {
-        if (matcher(cNode->data, params))
-            break;
-        cNode = cNode->next;
-    }
-
-    List_UnLock();
-
-    return cNode;
-}
-
-ListNode *List_First(List *list)
-{
-    return list->head;
-}
-
-ListNode *List_Last(List *list)
-{
-    return list->tail;
-}
-
-uint32_t List_Length(List *list)
-{
-    return list->length;
-}
-
-ListNode *List_InsertNode(List *list, ListNode *node, void *data)
-{
-    List_Lock();
-
-    ListNode *nNode = (ListNode *)List_malloc(sizeof(ListNode));
-    nNode->data = data;
-    _link_next(node, nNode);
-    if (node == list->tail)
-    {
-        list->tail = nNode;
-    }
-    list->length++;
-
-    List_UnLock();
-
-    return nNode;
-}
-
-ListNode *List_RemoveNode(List *list, ListNode *node)
-{
-    ListNode *prev, *next;
-
-    List_Lock();
-
-    if (list->length == 0)
-    {
-        List_UnLock();
-        return NULL;
-    }
-
-    if (node == list->head)
-    {
-        if (node->next != NULL)
-        {
-            list->head = node->next;
-            _cut_next(node);
-        }
-        else
-        {
-            list->head = list->tail = NULL;
-        }
-    }
-    else if (node == list->tail)
-    {
-        if (node->prev != NULL)
-        {
-            list->tail = node->prev;
-            _cut_prev(node);
-        }
-        else
-        {
-            list->head = list->tail = NULL;
-        }
-    }
-    else if (node->prev == NULL || node->next == NULL)
-    {
-        List_UnLock();
-        return NULL;
-    }
-    else
-    {
-        prev = node->prev;
-        next = node->next;
-        _cut_prev(node);
-        _cut_next(node);
-        prev->next = next;
-        next->prev = prev;
-    }
-
-    list->length--;
-
-    List_UnLock();
-
-    return node;
-}
-
-void List_DeleteNode(List *list, ListNode *node)
-{
-    List_Lock();
-    list->destructor(node->data);
-    List_free(node);
-    List_UnLock();
-}
-
-void List_DeleteMatched(List *list, NodeMatcher matcher, void *params)
-{
-    List_Lock();
-
-    ListNode *current = list->head, *n;
-
-    while (current != NULL)
-    {
-        if (matcher(current->data, params))
-        {
-            n = current->next;
-            current = List_RemoveNode(list, current);
-            list->destructor(current->data);
-            List_free(current);
-            current = n;
-        }
-        else
-        {
-            current = current->next;
-        }
-    }
-
-    List_UnLock();
-}
-
-uint32_t List_Count(List *list, NodeMatcher matcher, void *params)
-{
-    List_Lock();
-
-    uint32_t count = 0;
-    ListNode *node = List_FindFirst(list, matcher, params);
-
-    if (node == NULL)
-    {
-        List_UnLock();
-        return count;
-    }
-
-    count++;
-
-    do
-    {
-        if (matcher(node->data, params))
-            count++;
-        node = node->next;
-    } while (node != NULL);
-
-    List_UnLock();
-
-    return count;
-}
-
-bool List_IsEmpty(List *list)
-{
-    return list->length == 0;
-}
-
-typedef struct
-{
-    ListNode *first;
-    ListNode *last;
-} _sort_data;
-
 void List_QuickSort(List *list, NodeComparer comparer)
 {
-    List_Lock();
+    List_Lock(list);
 
     List *stack = List_CreateList(NULL);
     _sort_data *nsData = NULL, *sData = NULL;
@@ -478,7 +538,7 @@ void List_QuickSort(List *list, NodeComparer comparer)
     if (nsData->first == nsData->last)
     {
         List_free(nsData);
-        List_UnLock();
+        List_UnLock(list);
         return;
     }
 
@@ -526,28 +586,7 @@ void List_QuickSort(List *list, NodeComparer comparer)
 
     List_free(stack);
 
-    List_UnLock();
+    List_UnLock(list);
 
     return;
-}
-
-void List_Traverse(List *list, bool isReverse, Visitor visitor)
-{
-    List_Lock();
-
-    ListNode *current = isReverse ? list->tail : list->head;
-
-    while (current != NULL)
-    {
-        if (visitor(current->data))
-            break;
-        current = isReverse ? current->prev : current->next;
-    }
-
-    List_UnLock();
-}
-
-bool List_DefNodeMatcher(void *dat, void *params)
-{
-    return dat == params;
 }
