@@ -3,7 +3,7 @@
 #undef NULL
 #define NULL List_nullptr
 
-#ifdef LIST_OS_EN
+#ifdef LIST_THREAD_SAFED
 #define List_Lock(list) List_MutexAcquire(list->lock)
 #define List_UnLock(list) List_MutexRelease(list->lock)
 #else
@@ -17,7 +17,7 @@ struct List
     ListNode *tail;
     uint32_t length;
     DataDestructor destructor;
-#ifdef LIST_OS_EN
+#ifdef LIST_THREAD_SAFED
     void *lock;
 #endif
 };
@@ -176,7 +176,7 @@ List *List_CreateList(DataDestructor destructor)
         list->destructor = _null_data_destructor;
     else
         list->destructor = destructor;
-#ifdef LIST_OS_EN
+#ifdef LIST_THREAD_SAFED
     list->lock = List_MutexNew();
 #endif
     return list;
@@ -185,7 +185,7 @@ List *List_CreateList(DataDestructor destructor)
 void List_DestroyList(List *list)
 {
     List_DeleteAll(list);
-#ifdef LIST_OS_EN
+#ifdef LIST_THREAD_SAFED
     List_MutexFree(list->lock);
 #endif
     List_free(list);

@@ -21,7 +21,7 @@
 #define List_free free
 #endif
 
-#ifdef LIST_OS_EN
+#ifdef LIST_THREAD_SAFED
 
 #ifndef List_MutexNew
 #error "We need 'List_MutexNew' in os !"
