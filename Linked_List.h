@@ -80,12 +80,12 @@ void List_DeleteNode(List *list, ListNode *node);
 void List_DeleteMatched(List *list, NodeMatcher matcher, void *params);
 
 void List_Traverse(List *list, bool isReverse, Visitor visitor, void *params);
-
 void List_QuickSort(List *list, NodeComparer comparer);
 
 uint32_t List_Count(List *list, NodeMatcher matcher, void *params);
-
 bool List_IsEmpty(List *list);
+
+// --- default callbacks
 
 bool List_DefEqualMatcher(void *dat, void *params);
 
