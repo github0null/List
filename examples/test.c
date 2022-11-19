@@ -31,7 +31,7 @@ bool visitor(void *data, void *params)
 {
     printf((char *)data);
     printf("\n");
-    return false;
+    return true;
 }
 
 int comparer(void *str1, void *str2)
@@ -47,10 +47,10 @@ int main()
 
     List_Push(list, "node 3");
     List_Push(list, "node 2");
-    List_Push(list, "node 1");
+    ListNode_t *node_1 = List_Push(list, "node 1");
     List_Push(list, "node 4");
     List_Push(list, "node 5");
-    List_Push(list, "node 6");
+    ListNode_t *node_6 = List_Push(list, "node 6");
 
     List_Prepend(list, "first 1 node");
     List_Prepend(list, "first 2 node");
@@ -61,7 +61,9 @@ int main()
     // 2
 
     printf("============> 2 Traverse (isReverse==true)\n");
-    List_Traverse(list, visitor, NULL, true);
+    List_DeleteNode(list, node_6);
+    List_DeleteNode(list, node_1);
+    List_Traverse(list, visitor, NULL, false);
 
     // 3
 

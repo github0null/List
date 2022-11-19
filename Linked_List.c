@@ -392,6 +392,7 @@ ListNode_t *List_RemoveNode(List_t *list, ListNode_t *node)
 void List_DeleteNode(List_t *list, ListNode_t *node)
 {
     List_Lock(list);
+    _list_remove_node(list, node);
     list->destructor(node->data);
     List_free(node);
     List_UnLock(list);
@@ -461,11 +462,23 @@ void List_Traverse(List_t *list, ListVisitor_t visitor, void *params, bool isRev
 
     List_Lock(list);
 
-    current = isReverse ? list->tail : list->head;
+    if (isReverse) {
 
-    while (current != NULL) {
-        if (visitor(current->data, params)) break;
-        current = isReverse ? current->prev : current->next;
+        current = list->tail;
+
+        while (current != NULL) {
+            if (!visitor(current->data, params)) break;
+            current = current->prev;
+        }
+
+    } else {
+
+        current = list->head;
+
+        while (current != NULL) {
+            if (!visitor(current->data, params)) break;
+            current = current->next;
+        }
     }
 
     List_UnLock(list);

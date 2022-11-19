@@ -73,6 +73,14 @@
 
 #endif
 
+typedef struct _ListNode {
+    struct _ListNode *prev;
+    struct _ListNode *next;
+    void *data;
+} ListNode_t;
+
+typedef struct List_t List_t;
+
 /**
  * @brief A List Node Comparer Callbk
  * 
@@ -110,47 +118,210 @@ typedef void (*ListDataDestructor_t)(void *dat);
  * @param dat The data pointer
  * @param params The user context data, can be passed by 'List_Traverse(...)'
  * 
- * @return If true, the traverse will be breaked, end early
+ * @return If false, the traverse will be breaked, end early
  */
 typedef bool (*ListVisitor_t)(void *dat, void *params);
 
-typedef struct _ListNode {
-    struct _ListNode *prev;
-    struct _ListNode *next;
-    void *data;
-} ListNode_t;
-
-typedef struct List_t List_t;
-
+/**
+ * @brief Create list
+ * 
+ * @param destructor A data destructor callback function, 
+ *                   will be called when use 'List_DestroyList' to destroy your list
+ * 
+ * @return List_t* A list
+ */
 List_t *List_CreateList(ListDataDestructor_t destructor);
+
+/**
+ * @brief Destroy list
+ * 
+ * @param list The list pointer that will be freed
+ */
 void List_DestroyList(List_t *list);
 
+/**
+ * @brief Insert a node at front of a list
+ * 
+ * @param list The target list
+ * @param data A data pointer for new node
+ * 
+ * @return ListNode_t* The new node
+ */
 ListNode_t *List_Prepend(List_t *list, void *data);
+
+/**
+ * @brief Push a node at end of a list
+ * 
+ * @param list The target list
+ * @param data A data pointer for new node
+ * 
+ * @return ListNode_t* The new node
+ */
 ListNode_t *List_Push(List_t *list, void *data);
+
+/**
+ * @brief Pop the last node of a list
+ * 
+ * @param list The target list
+ * 
+ * @return ListNode_t* The last node
+ */
 ListNode_t *List_Pop(List_t *list);
 
+/**
+ * @brief Enqueue a node at end of a list (Equal to 'List_Push')
+ * 
+ * @param list The target list
+ * @param data A data pointer for new node
+ * 
+ * @return ListNode_t* The new node
+ */
 ListNode_t *List_Enqueue(List_t *list, void *data);
+
+/**
+ * @brief Dequeue the first node at a list
+ * 
+ * @param list The target list
+ * 
+ * @return ListNode_t* The first node
+ */
 ListNode_t *List_Dequeue(List_t *list);
 
+/**
+ * @brief Find the first match node in a list
+ * 
+ * @param list The target list
+ * @param matcher A node matcher, will be called for every node
+ * @param params User context data
+ * 
+ * @return ListNode_t* The target node, if not found, return NULL
+ */
 ListNode_t *List_FindFirst(List_t *list, ListNodeMatcher_t matcher, void *params);
+
+/**
+ * @brief Find the next match node in a list
+ * 
+ * @param list The target list
+ * @param node The last matched node
+ * @param matcher A node matcher, will be called for every node
+ * @param params User context data
+ * 
+ * @return ListNode_t* The target node, if not found, return NULL
+ */
 ListNode_t *List_FindNext(List_t *list, ListNode_t *node, ListNodeMatcher_t matcher, void *params);
 
+/**
+ * @brief Get the first node at a list
+ * 
+ * @param list The target list
+ * 
+ * @return ListNode_t* The first node
+ */
 ListNode_t *List_First(List_t *list);
+
+/**
+ * @brief Get the last node at a list
+ * 
+ * @param list The target list
+ * 
+ * @return ListNode_t* The last node
+ */
 ListNode_t *List_Last(List_t *list);
+
+/**
+ * @brief Get list length
+ * 
+ * @param list The target list
+ * 
+ * @return uint32_t 
+ */
 uint32_t List_Length(List_t *list);
 
+/**
+ * @brief Check whether the list is empty
+ * 
+ * @param list The target list
+ * 
+ * @return true The list is empty
+ * @return false The list is not empty
+ */
+bool List_IsEmpty(List_t *list);
+
+/**
+ * @brief Get the number of the matched nodes
+ * 
+ * @param list The target list
+ * @param matcher A node matcher, will be called for every node
+ * @param params User context data
+ * 
+ * @return uint32_t The number of the matched nodes
+ */
+uint32_t List_Count(List_t *list, ListNodeMatcher_t matcher, void *params);
+
+/**
+ * @brief Insert a node at the end of a existed node
+ * 
+ * @param list The target list
+ * @param node The target existed node
+ * @param data A data pointer for new node
+ * 
+ * @return ListNode_t* The new node
+ */
 ListNode_t *List_InsertNode(List_t *list, ListNode_t *node, void *data);
+
+/**
+ * @brief Remove a node from target list (not free the node memory)
+ * 
+ * @param list The target list
+ * @param node The target existed node
+ * 
+ * @return ListNode_t* The removed node
+ */
 ListNode_t *List_RemoveNode(List_t *list, ListNode_t *node);
 
+/**
+ * @brief Remove all node and free the memory for every node
+ * 
+ * @param list The target list
+ */
 void List_DeleteAll(List_t *list);
+
+/**
+ * @brief Remove a node and free the memory for it
+ * 
+ * @param list The target list
+ * @param node The target node
+ */
 void List_DeleteNode(List_t *list, ListNode_t *node);
+
+/**
+ * @brief Remove a matched node and free the memory for it
+ * 
+ * @param list The target list
+ * @param matcher A node matcher, will be called for every node
+ * @param params User context data
+ */
 void List_DeleteMatched(List_t *list, ListNodeMatcher_t matcher, void *params);
 
+/**
+ * @brief Foreach a list
+ * 
+ * @param list The target list
+ * @param visitor A node visitor, will be called for every node
+ * @param params User context data
+ * @param isReverse If true, we will traverse the list in reverse order
+ */
 void List_Traverse(List_t *list, ListVisitor_t visitor, void *params, bool isReverse);
 
+/**
+ * @brief QuickSort a list (ascending order)
+ * 
+ * @note This function will swap the node data pointer to sort the list, so if you saved some list node,
+ *       after sort done, the data pointer of the list node that you saved will be changed
+ * 
+ * @param list The target list
+ * @param comparer A node comparer, used to compare two node
+ */
 void List_QuickSort(List_t *list, ListNodeComparer_t comparer);
-
-uint32_t List_Count(List_t *list, ListNodeMatcher_t matcher, void *params);
-bool List_IsEmpty(List_t *list);
 
 #endif
