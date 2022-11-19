@@ -126,7 +126,9 @@ typedef bool (*ListVisitor_t)(void *dat, void *params);
  * @brief Create list
  * 
  * @param destructor A data destructor callback function, 
- *                   will be called when use 'List_DestroyList' to destroy your list
+ *                   will be called when use 'List_DestroyList' to destroy your list;
+ *                   If this params is NULL, we will use default destructor 
+ *                   (!!! default destructor will do nothing for your data !!!)
  * 
  * @return List_t* A list
  */
