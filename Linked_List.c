@@ -143,7 +143,7 @@ static ListNode_t *_list_remove_node(List_t *list, ListNode_t *node)
     }
 
     else if (node->prev == NULL || node->next == NULL) {
-        return NULL;
+        return NULL; // invalid node, skip
     }
 
     else {

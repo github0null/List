@@ -85,6 +85,36 @@ int main()
     List_Enqueue(list, "node 8");
     List_Traverse(list, visitor, NULL, false);
 
+    //
+    printf("============> Foreach Safe (will remove node 5 and 7 after loop done)\n");
+    {
+        ListNode_t *ele, *t;
+        List_ForeachSafe(list, ele, t)
+        {
+            printf("'%s' -> ", (char *)ele->data);
+
+            if (strstr((char *)ele->data, "5")) {
+                List_DeleteNode(list, ele);
+            }
+
+            if (strstr((char *)ele->data, "7")) {
+                List_DeleteNode(list, ele);
+            }
+        }
+    }
+    printf("\n");
+
+    //
+    printf("============> Foreach\n");
+    {
+        ListNode_t *ele;
+        List_Foreach(list, ele)
+        {
+            printf("'%s' -> ", (char *)ele->data);
+        }
+    }
+    printf("\n");
+
     // del
 
     printf("============> Destroy\n");
