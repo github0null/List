@@ -49,12 +49,12 @@
 #define List_Inline
 #endif
 
-#ifndef List_malloc
-#define List_malloc malloc
+#ifndef List_mem_alloc
+#define List_mem_alloc malloc
 #endif
 
-#ifndef List_free
-#define List_free free
+#ifndef List_mem_free
+#define List_mem_free free
 #endif
 
 #ifdef LIST_THREAD_SAFED
@@ -220,7 +220,21 @@ ListNode_t *List_Dequeue(List_t *list);
          ele = ele->next)
 
 /**
- * @brief Foreach a list. Support remove current element
+ * @brief Foreach a list in reverse order
+ *
+ * @note !!! Don't remove the current element in foreach;
+ *           If you want to remove current element, please use 'List_ForeachSafe'
+ *
+ * @param list The target list
+ * @param ele The current ListNode_t
+ */
+#define List_ForeachReverse(list, ele) \
+    for (ele = List_Last(list);        \
+         ele != NULL;                  \
+         ele = ele->prev)
+
+/**
+ * @brief Foreach a list (allow remove/delete current element)
  *
  * @param list The target list
  * @param ele The current list node pointer
@@ -230,6 +244,18 @@ ListNode_t *List_Dequeue(List_t *list);
     for (ele = List_First(list), tmp = (ele != NULL ? ele->next : NULL); \
          ele != NULL;                                                    \
          ele = tmp, tmp = (tmp != NULL ? tmp->next : NULL))
+
+/**
+ * @brief Foreach a list in reverse order (allow remove/delete current element)
+ *
+ * @param list The target list
+ * @param ele The current list node pointer
+ * @param tmp A temporary variable
+ */
+#define List_ForeachSafeReverse(list, ele, tmp)                         \
+    for (ele = List_Last(list), tmp = (ele != NULL ? ele->prev : NULL); \
+         ele != NULL;                                                   \
+         ele = tmp, tmp = (tmp != NULL ? tmp->prev : NULL))
 
 /**
  * @brief Find the first match node in a list
@@ -303,7 +329,7 @@ bool List_IsEmpty(List_t *list);
 uint32_t List_Count(List_t *list, ListNodeMatcher_t matcher, void *params);
 
 /**
- * @brief Insert a node at the end of a existed node
+ * @brief Insert a new node at the end of a existed node
  *
  * @param list The target list
  * @param node The target existed node
@@ -314,7 +340,18 @@ uint32_t List_Count(List_t *list, ListNodeMatcher_t matcher, void *params);
 ListNode_t *List_InsertNode(List_t *list, ListNode_t *node, void *data);
 
 /**
- * @brief Remove a node from target list (not free the node memory)
+ * @brief Insert a new node before a existed node
+ *
+ * @param list The target list
+ * @param node The target existed node
+ * @param data A data pointer for new node
+ *
+ * @return ListNode_t* The new node
+ */
+ListNode_t *List_InsertNodeBefore(List_t *list, ListNode_t *node, void *data);
+
+/**
+ * @brief Remove a node from target list (without free the node memory)
  *
  * @param list The target list
  * @param node The target existed node
@@ -324,14 +361,14 @@ ListNode_t *List_InsertNode(List_t *list, ListNode_t *node, void *data);
 ListNode_t *List_RemoveNode(List_t *list, ListNode_t *node);
 
 /**
- * @brief Remove all node and free the memory for every node
+ * @brief Remove all node and destroy the memory for every node
  *
  * @param list The target list
  */
-void List_DeleteAll(List_t *list);
+void List_Clear(List_t *list);
 
 /**
- * @brief Remove a node and free the memory for it
+ * @brief Remove a node and destroy the node/data memory
  *
  * @param list The target list
  * @param node The target node
@@ -339,7 +376,7 @@ void List_DeleteAll(List_t *list);
 void List_DeleteNode(List_t *list, ListNode_t *node);
 
 /**
- * @brief Remove a matched node and free the memory for it
+ * @brief Remove a matched node and destroy the node/data memory
  *
  * @param list The target list
  * @param matcher A node matcher, will be called for every node
@@ -348,7 +385,7 @@ void List_DeleteNode(List_t *list, ListNode_t *node);
 void List_DeleteMatched(List_t *list, ListNodeMatcher_t matcher, void *params);
 
 /**
- * @brief Foreach a list
+ * @brief Foreach a list with a visitor callback
  *
  * @param list The target list
  * @param visitor A node visitor, will be called for every node
@@ -360,8 +397,8 @@ void List_Traverse(List_t *list, ListVisitor_t visitor, void *params, bool isRev
 /**
  * @brief QuickSort a list (ascending order)
  *
- * @note This function will swap the node data pointer to sort the list, so if you saved some list node,
- *       after sort done, the data pointer of the list node that you saved will be changed
+ * @note This function will swap the node data pointer to sort the list, 
+ *       so after sort done, the data pointer of the list node will be changed !
  *
  * @param list The target list
  * @param comparer A node comparer, used to compare two node
