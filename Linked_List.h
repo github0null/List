@@ -158,6 +158,16 @@ List_t *List_CreateList(ListDataDestructor_t destructor);
 void List_DestroyList(List_t *list);
 
 /**
+ * @brief Get node data
+ *
+ * @param node The target list node
+ * @param type The node user data type
+ * 
+ * @return data pointer <user data type> *
+*/
+#define List_GetNodeData(node, type) ((type *)((node) == List_nullptr ? List_nullptr : (node)->data))
+
+/**
  * @brief Insert a node at front of a list
  *
  * @param list The target list
@@ -368,7 +378,7 @@ ListNode_t *List_RemoveNode(List_t *list, ListNode_t *node);
 void List_Clear(List_t *list);
 
 /**
- * @brief Remove a node and destroy the node/data memory
+ * @brief Remove a node and destroy the node and user data memory
  *
  * @param list The target list
  * @param node The target node
@@ -376,7 +386,18 @@ void List_Clear(List_t *list);
 void List_DeleteNode(List_t *list, ListNode_t *node);
 
 /**
- * @brief Remove a matched node and destroy the node/data memory
+ * @brief Remove a node and destroy the node memory (you can choose to free user data memory)
+ *
+ * @param list The target list
+ * @param node The target node
+ * @param free_user_data Free user data pointer by 'ListDataDestructor_t'
+ * 
+ * @return If don't free user data (free_user_data==false), will return the node->data pointer, otherwise will return NULL
+ */
+void *List_DeleteNode2(List_t *list, ListNode_t *node, bool free_user_data);
+
+/**
+ * @brief Remove a matched node and destroy the node and user data memory
  *
  * @param list The target list
  * @param matcher A node matcher, will be called for every node

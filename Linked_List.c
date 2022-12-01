@@ -422,13 +422,37 @@ ListNode_t *List_RemoveNode(List_t *list, ListNode_t *node)
     return n;
 }
 
+void *List_DeleteNode2(List_t *list, ListNode_t *node, bool free_user_data)
+{
+    void *usr_data = NULL;
+
+    List_Lock(list);
+    {
+        node = _list_remove_node(list, node);
+
+        if (node) {
+
+            if (free_user_data) {
+                list->destructor(node->data);
+            } else {
+                usr_data = node->data;
+            }
+
+            List_mem_free(node);
+        }
+
+        else {
+            // it's an invalid node, ignore it
+        }
+    }
+    List_UnLock(list);
+
+    return usr_data;
+}
+
 void List_DeleteNode(List_t *list, ListNode_t *node)
 {
-    List_Lock(list);
-    _list_remove_node(list, node);
-    list->destructor(node->data);
-    List_mem_free(node);
-    List_UnLock(list);
+    List_DeleteNode2(list, node, true);
 }
 
 void List_DeleteMatched(List_t *list, ListNodeMatcher_t matcher, void *params)
