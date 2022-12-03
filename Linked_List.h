@@ -162,10 +162,30 @@ void List_DestroyList(List_t *list);
  *
  * @param node The target list node
  * @param type The node user data type
- * 
+ *
  * @return data pointer <user data type> *
 */
 #define List_GetNodeData(node, type) ((type *)((node) == List_nullptr ? List_nullptr : (node)->data))
+
+/**
+ * @brief Get prev node data
+ *
+ * @param node The target list node (can't be NULL !!!)
+ * @param type The node user data type
+ *
+ * @return data pointer <user data type> *
+*/
+#define List_GetPrevData(node, type) ((type *)((node)->prev == List_nullptr ? List_nullptr : (node)->prev->data))
+
+/**
+ * @brief Get next node data
+ *
+ * @param node The target list node (can't be NULL !!!)
+ * @param type The node user data type
+ *
+ * @return data pointer <user data type> *
+*/
+#define List_GetNextData(node, type) ((type *)((node)->next == List_nullptr ? List_nullptr : (node)->next->data))
 
 /**
  * @brief Insert a node at front of a list
